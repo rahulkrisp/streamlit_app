@@ -22,13 +22,23 @@ from oauth2client.service_account import ServiceAccountCredentials
 load_dotenv()  # Load variables from .env file
 
 # Get the Google credentials JSON from the environment variable
-creds_json_str = os.getenv("GOOGLE_CREDS")
-creds_dict = json.loads(creds_json_str)
+if "STREAMLIT_SERVER" in os.environ:  # Adjust this check for your setup
+    # Load the credentials from Streamlit secrets
+    creds_toml = st.secrets["GOOGLE_CREDS"]
+    creds_dict = toml.loads(creds_toml)
+else:
+    # Load the credentials from .env file locally
+    creds_json_str = os.getenv("GOOGLE_CREDS")
+    creds_dict = json.loads(creds_json_str)
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
+#
+# headers = {
+#     "authorization": st.secrets["GOOGLE_CREDS"],
+# }
 
 
 
