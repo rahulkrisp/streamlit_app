@@ -22,14 +22,16 @@ from oauth2client.service_account import ServiceAccountCredentials
 load_dotenv()  # Load variables from .env file
 
 # Get the Google credentials JSON from the environment variable
-if "STREAMLIT_SERVER" in os.environ:  # Adjust this check for your setup
+if "STREAMLIT_SERVER" in os.environ:
     # Load the credentials from Streamlit secrets
     creds_toml = st.secrets["GOOGLE_CREDS"]
-    creds_dict = toml.loads(creds_toml)
+    creds_dict = json.loads(creds_toml)  # Parse if stored as a JSON string
 else:
     # Load the credentials from .env file locally
     creds_json_str = os.getenv("GOOGLE_CREDS")
-    creds_dict = json.loads(creds_json_str)
+    if not creds_json_str:
+        raise ValueError("GOOGLE_CREDS environment variable is not set or is empty.")
+    creds_dict = json.loads(creds_json_str)  # Parse the local JSON string
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
