@@ -29,8 +29,8 @@ if "STREAMLIT_SERVER" in os.environ:
 else:
     # Load the credentials from .env file locally
     creds_json_str = os.getenv("GOOGLE_CREDS")
-    if not creds_json_str:
-        raise ValueError("GOOGLE_CREDS environment variable is not set or is empty.")
+    # if not creds_json_str:
+    #     raise ValueError("GOOGLE_CREDS environment variable is not set or is empty.")
     creds_dict = json.loads(creds_json_str)  # Parse the local JSON string
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
