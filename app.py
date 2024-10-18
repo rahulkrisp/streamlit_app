@@ -2,68 +2,46 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from collections import Counter
-
 from streamlit import title
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from textwrap3 import wrap
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-
 import json
 import re
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 
+api_key = 'AIzaSyB-FlMoVaHj7qgjj01DeEl-ZJ1Y1i23Nu0'
+load_dotenv()  
 
-load_dotenv()  # Load variables from .env file
 
-# Get the Google credentials JSON from the environment variable
-if "STREAMLIT_SERVER" in os.environ:
-    # Load the credentials from Streamlit secrets
-    creds_toml = st.secrets["GOOGLE_CREDS"]
-    creds_dict = json.loads(creds_toml)  # Parse if stored as a JSON string
-else:
-     # Load the credentials from .env file locally
-     creds_json_str = os.getenv("GOOGLE_CREDS")
-     if not creds_json_str:
-         raise ValueError("GOOGLE_CREDS environment variable is not set or is empty.")
-     creds_dict = json.loads(creds_json_str)  # Parse the local JSON string
+
+creds_dict = st.secrets["GOOGLE_CREDS"]
+
+
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
-#
-# headers = {
-#     "authorization": st.secrets["GOOGLE_CREDS"],
-# }
 
 
-
-
-# Open the Google Sheet
 sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1Xy3zo-XMGVLgl7lVzR9gcDR5e9Sa-hw8LM-JhseTu8w/edit?pli=1&gid=704561408#gid=704561408').worksheet('Sheet5')
 
-# Get the data into a pandas DataFrame
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 
 
 
-# # Load  Excel file
-# excel_file = 'C:/Users/user/Desktop/crispchat.xlsx'
-# df = pd.read_excel(excel_file)
 
-# Convert date column to datetime
 df['Date'] = pd.to_datetime(df['Date'])
 df['Summary'] = df['Summary'].astype(str)
 df['Summary'] = df['Summary'].apply(lambda x: '<br>'.join(wrap(x, width=30)))
 
-# Sidebar date filter
 start_date, end_date = st.sidebar.date_input(
     "Select Date Range",
     value=(df['Date'].min(), df['Date'].max()),
@@ -71,23 +49,15 @@ start_date, end_date = st.sidebar.date_input(
     max_value=df['Date'].max()
 )
 
-# Filter data based on the selected date range
 filtered_df = df[(df['Date'] >= pd.Timestamp(start_date)) & (df['Date'] <= pd.Timestamp(end_date))]
 
-# Drop rows where 'Plan' or 'Date' is NaN
-# filtered_df = filtered_df.dropna(subset=['Plan'])
-filtered_df = filtered_df[~filtered_df['Plan'].isin(['N/A', '', 'NA'])]  # Remove rows where Competitor Name is 'N/A' or 'NULL'
-# Count occurrences of each plan type
+
+filtered_df = filtered_df[~filtered_df['Plan'].isin(['N/A', '', 'NA'])]  
 plan_counts = filtered_df['Plan'].value_counts().reset_index()
 plan_counts.columns = ['Plan Type', 'Count']
 
-# Sort the plan counts in descending order
 plan_counts = plan_counts.sort_values(by='Count', ascending=False)
-#
-# # Print plan_counts to verify sorting
-# st.write(plan_counts)
 
-# Create a horizontal bar plot
 fig = px.bar(plan_counts,
              x='Count',
              y='Plan Type',
@@ -95,48 +65,37 @@ fig = px.bar(plan_counts,
              title='Distribution of Plan Types',
              category_orders={'Plan Type': plan_counts['Plan Type']})
 
-# Show the plot in the Streamlit app
+
 st.plotly_chart(fig)
 
 
 
 
-#WORDCLOUD
-
-# Prepare the data
 df['Content'] = df['Content'].fillna('')
 all_content = ', '.join(df['Content'])
 
-# Split by comma and strip spaces
 words = [word.strip() for word in all_content.split(',')]
 
-# Count occurrences of each word
 word_counts = Counter(words)
 
-# Generate word cloud
 wordcloud = WordCloud(
     width=800, height=400,
     colormap='plasma',
-    background_color='black',  # Word cloud background
-    contour_color='white',  # Contour color for visibility
+    background_color='black',  
+    contour_color='white',  
     contour_width=1
 ).generate_from_frequencies(word_counts)
 
-# Create figure and axis
 fig, ax = plt.subplots(figsize=(10, 5))
 
-# Set the figure and axis backgrounds to transparent
 fig.patch.set_facecolor('none')
 ax.set_facecolor('none')
 
-# Display the word cloud
 ax.imshow(wordcloud, interpolation='bilinear')
 ax.axis('off')
 
-# Set title
 plt.title('Word Cloud of Content', color='white', loc='left', pad=20, fontdict={'family': 'Arial', 'weight': 'bold'} )
 
-# Save the figure with transparent background
 st.pyplot(fig, transparent=True)
 
 
